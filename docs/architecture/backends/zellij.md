@@ -11,6 +11,7 @@ It covers:
 - launch command mapping
 - supported target paths for the first release
 - preflight checks
+- workspace ensure helpers
 - backend limitations the CLI must expose honestly
 
 ## Validated Assumptions
@@ -23,6 +24,11 @@ Confirmed working assumptions for the current product direction:
 - target placement differs by command form
 - target support should be introduced carefully, not all at once
 
+Assumptions that need to be validated in the next slice:
+
+- session creation can be expressed through a stable non-interactive command path
+- tab lookup and tab creation can be modeled without pretending all tab semantics are backend-neutral
+
 ## Useful Commands
 
 ### Validation
@@ -30,6 +36,7 @@ Confirmed working assumptions for the current product direction:
 | Action | Command shape |
 | - | - |
 | list sessions | `zellij list-sessions` |
+| list tab names in session | `zellij -s <s> action query-tab-names` |
 
 ### Launch
 
@@ -38,6 +45,15 @@ Confirmed working assumptions for the current product direction:
 | `new_pane` | `zellij -s <s> run --name <n> --cwd <dir> -- <cmd>` | strongest first candidate for MVP |
 | `floating_pane` | `zellij -s <s> run --floating --name <n> --cwd <dir> -- <cmd>` | candidate for later slice |
 | `new_tab` | `zellij -s <s> action new-tab --name <n> --close-on-exit -- <cmd>` | likely later because semantics differ |
+
+### Workspace ensure
+
+| Action | Command shape | Notes |
+| - | - | - |
+| create missing session | `zellij attach --create-background <session>` | detached non-interactive session creation |
+| select existing tab by name | `zellij -s <s> action go-to-tab-name <tab>` | fails if tab does not exist |
+| select or create tab by name | `zellij -s <s> action go-to-tab-name --create <tab>` | explicit caller opt-in |
+| launch into selected tab | `zellij -s <s> action new-pane --name <n> --cwd <dir> -- <cmd>` | used after tab selection |
 
 ## First Release Recommendation
 
@@ -58,6 +74,13 @@ The adapter should validate:
 - `zellij` exists in `PATH`
 - the requested session is visible in `zellij list-sessions`
 - the requested target is in the supported target set for the current release
+
+For the workspace ensure slice, the adapter should also define:
+
+- how to create a missing session when the caller requested it
+- how to detect whether a named tab already exists
+- how to create a named tab when the caller requested it
+- how to keep those steps explicit in logs and errors
 
 ## Naming
 
@@ -85,3 +108,7 @@ If one target behaves differently or is not yet well-supported, the CLI should r
 Blocking semantics should be considered only after the basic launch path is in place.
 
 Different targets may have different blocking support, so this should be added later and documented carefully.
+
+### Workspace creation should not hide backend differences
+
+If Zellij cannot reliably inspect or create a workspace element through a clean non-interactive path, the CLI should expose that limitation instead of faking parity.

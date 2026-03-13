@@ -8,13 +8,13 @@ Status: Draft
 
 Build the first production slice of `muxd` as a thin Rust CLI wrapper that launches arbitrary commands into an existing Zellij session.
 
-The first intended caller is `systemd --user`.
+The first intended caller is an interactive shell or a simple script.
 
 ## Problem Link
 
 This slice implements the primary scenario from the PRD:
 
-- recurring automation should call one stable CLI instead of embedding raw Zellij commands in timer units
+- recurring automation should call one stable CLI instead of embedding raw Zellij commands in shell scripts
 
 Related documents:
 
@@ -32,7 +32,7 @@ Related documents:
 - support for `--cwd`
 - support for `--name`
 - documented exit codes
-- examples for `systemd --user` unit integration
+- examples for shell integration
 
 ## Out of Scope
 
@@ -72,7 +72,7 @@ The CLI must execute the payload through the correct Zellij command shape for th
 
 ### R7
 
-The CLI must document exit codes suitable for use in `systemd --user` units.
+The CLI must document exit codes suitable for shell scripts and automation.
 
 ## Acceptance Criteria
 
@@ -81,7 +81,7 @@ The CLI must document exit codes suitable for use in `systemd --user` units.
 - missing session produces a clear validation error
 - unsupported target produces a clear validation error
 - `--cwd` changes launch working directory where Zellij supports it
-- a minimal `systemd --user` service example can invoke the command successfully
+- a minimal shell command example can invoke the command successfully
 
 ## Edge Cases
 
@@ -99,15 +99,15 @@ The CLI must document exit codes suitable for use in `systemd --user` units.
 ## Decisions
 
 - payload commands are treated as arbitrary commands, not as first-class agent concepts
-- `systemd --user` is the scheduler; `muxd` is only the launcher
+- scheduling, if any, stays outside `muxd`
 
 ## Validation
 
 - manual launch against an existing Zellij session
 - negative checks for missing session and invalid target
-- documented example for `systemd --user`
+- documented example for shell usage
 
 ## Follow-up Work
 
 - decide whether `--wait` belongs in the next slice
-- add defaults/config if timer units still feel too repetitive
+- add defaults/config if repeated shell invocations still feel too repetitive

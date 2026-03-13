@@ -21,14 +21,20 @@ Possible later additions:
 
 ## `muxd launch`
 
-Launches an arbitrary command into an existing Zellij session.
+Launches an arbitrary command into a Zellij workspace.
 
 Expected useful flags:
 
 - `--session <name>`
+- `--tab <name>`
 - `--target <name>`
 - `--cwd <path>`
 - `--name <launch-name>`
+
+Planned workspace flags for the next slice:
+
+- `--ensure-session`
+- `--ensure-tab`
 
 Payload command:
 
@@ -37,7 +43,7 @@ Payload command:
 Example:
 
 ```text
-muxd launch --session work --target new_pane --cwd /repo --name nightly-report -- make report
+muxd launch --session work --tab issue-analysis --target new_pane --cwd /repo --name nightly-report -- make report
 ```
 
 ## Expected Semantics
@@ -46,7 +52,8 @@ muxd launch --session work --target new_pane --cwd /repo --name nightly-report -
 
 - validate required arguments
 - validate that `zellij` exists in `PATH`
-- validate that the requested session exists
+- validate that the requested session exists unless creation was explicitly requested
+- validate that the requested tab exists unless creation was explicitly requested
 - validate that the requested target is supported
 - map the request to the correct backend command shape
 - execute that backend command
@@ -65,9 +72,15 @@ The first release should not:
 - maintain state after launch
 - expose queue semantics
 
+Workspace ensure behavior must stay explicit:
+
+- no automatic creation without flags
+- no hidden default workspace selection
+- no agent-specific prompt or template model in the core CLI
+
 Current documented config scope:
 
-- defaults for backend, session, target, and cwd
+- defaults for backend, session, tab, target, and cwd
 - one user-level config file
 - no named profiles yet
 
@@ -81,7 +94,8 @@ Expected initial exit codes:
 | `1` | invalid user input |
 | `2` | backend or environment unavailable |
 | `3` | requested session or target is unavailable |
-| `4` | backend launch command failed |
+| `4` | workspace setup failed |
+| `5` | backend launch command failed |
 
 The exact numeric mapping can still be refined during implementation, but it must be documented and stable.
 
@@ -108,17 +122,17 @@ JSON output is optional for the first slice.
 
 If added, it should be a direct mirror of launch result data, not a hidden task model.
 
-## Integration with `systemd --user`
+## Shell Integration
 
-Example service `ExecStart`:
+Example manual or script invocation:
 
 ```text
-/usr/local/bin/muxd launch --session work --target new_pane --cwd /repo --name nightly-report -- make report
+./target/debug/muxd launch --session work --tab issue-analysis --target new_pane --cwd /repo --name nightly-report -- make report
 ```
 
 The main integration requirement is:
 
-- timer and service units should not need to embed raw Zellij syntax
+- shell commands and scripts should not need to embed raw Zellij syntax
 
 ## Relationship to Backend Docs
 

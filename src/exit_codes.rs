@@ -4,7 +4,8 @@ pub enum ProcessExitCode {
     InvalidInput = 1,
     BackendUnavailable = 2,
     ResourceUnavailable = 3,
-    LaunchFailed = 4,
+    WorkspaceSetupFailed = 4,
+    LaunchFailed = 5,
 }
 
 impl ProcessExitCode {

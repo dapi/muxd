@@ -28,6 +28,9 @@ fn main() -> ExitCode {
             println!("launched: {}", display_name);
             println!("backend: {}", success.backend);
             println!("session: {}", success.session);
+            if let Some(tab) = &success.tab {
+                println!("tab: {}", tab);
+            }
             println!("target: {}", success.target);
             ExitCode::from(ProcessExitCode::Success.as_u8())
         }

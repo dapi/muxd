@@ -17,6 +17,9 @@ pub enum Target {
 pub struct LaunchRequest {
     pub backend: Backend,
     pub session: String,
+    pub tab: Option<String>,
+    pub ensure_session: bool,
+    pub ensure_tab: bool,
     pub target: Target,
     pub cwd: Option<PathBuf>,
     pub name: Option<String>,

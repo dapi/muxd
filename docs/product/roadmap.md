@@ -10,13 +10,13 @@ This roadmap sequences product growth from a thin launch wrapper into richer mul
 
 Goal:
 
-- make `muxd launch` useful from `systemd --user` timers
+- make `muxd launch` useful for manual runs and simple shell scripts
 
 Scope:
 
 - existing Zellij session
 - one launch command
-- one or two safe targets
+- one safe target
 - arbitrary payload command after `--`
 - `--cwd`
 - `--name`
@@ -44,7 +44,7 @@ Active execution plan:
 
 Goal:
 
-- reduce repetition in timer units and scripts
+- reduce repetition in shell invocations and scripts
 
 Scope:
 
@@ -59,10 +59,34 @@ Active spec:
 
 Why next:
 
-- this better supports the primary `systemd --user` timer use case
+- this better supports repeated manual and shell-driven invocations
 - it removes repeated boilerplate without pulling the product toward lifecycle orchestration
 
-## R2: Honest blocking path
+## R2: Workspace ensure semantics
+
+Goal:
+
+- make recurring workflows target a stable Zellij workspace without manual prep
+
+Scope:
+
+- optional session creation when missing
+- tab selection by name
+- optional tab creation when missing
+- launch into a new pane inside the selected tab
+- explicit flags so the behavior stays visible to the caller
+
+Active spec:
+
+- `docs/specs/2026-03-13-zellij-workspace-ensure.md`
+
+Guardrails:
+
+- no hidden scheduler or task model
+- no agent-specific abstraction in the core CLI
+- no prompt template system in this slice
+
+## R3: Honest blocking path
 
 Goal:
 
@@ -76,9 +100,8 @@ Scope:
 Guardrail:
 
 - `--wait` must not smuggle daemon or task-tracking semantics back into the thin-wrapper product
-- `--wait` stays deferred until after the defaults/config slice is complete
 
-## R3: Target expansion
+## R4: Target expansion
 
 Goal:
 
@@ -88,9 +111,8 @@ Scope:
 
 - additional Zellij targets
 - explicit unsupported combinations
-- "ensure workspace exists" helpers such as session or tab creation, if they prove necessary
 
-## R4: tmux evaluation
+## R5: tmux evaluation
 
 Goal:
 

@@ -6,7 +6,7 @@ Status: Draft
 
 ## Summary
 
-Add a small configuration layer to `muxd` so recurring `systemd --user` timers and scripts do not have to repeat the same launch flags on every invocation.
+Add a small configuration layer to `muxd` so recurring shell invocations and scripts do not have to repeat the same launch flags on every invocation.
 
 This slice should keep `muxd` thin. It is about defaults for launch inputs, not about orchestration, profiles with hidden behavior, or workspace management.
 
@@ -34,10 +34,11 @@ Related documents:
 - support defaults for:
   - backend
   - session
+  - tab
   - target
   - cwd
 - define precedence between CLI flags and config values
-- document behavior clearly for timer and script callers
+- document behavior clearly for shell and script callers
 - keep `muxd launch` semantics explicit when values come from config
 
 ## Out of Scope
@@ -67,6 +68,7 @@ Supported defaults in this slice must be limited to:
 
 - backend
 - session
+- tab
 - target
 - cwd
 
@@ -86,6 +88,7 @@ Invalid config must fail clearly with a user-facing validation error.
 
 - `muxd launch` works without a config file
 - `muxd launch` can omit `--session` when the config provides a default session
+- `muxd launch` can omit `--tab` when the config provides a default tab
 - `muxd launch` can omit `--target` when the config provides a default target
 - `muxd launch` can omit `--cwd` when the config provides a default cwd
 - explicit CLI flags override config values
@@ -111,7 +114,7 @@ Invalid config must fail clearly with a user-facing validation error.
 - unit tests for config parsing
 - unit tests for CLI-over-config precedence
 - integration tests showing config-backed invocations
-- documented example for `systemd --user` timers using a short `muxd launch` command
+- documented example for a short shell invocation using `muxd launch`
 
 ## Follow-up Work
 

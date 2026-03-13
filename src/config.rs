@@ -15,6 +15,7 @@ pub struct FileConfig {
 pub struct LaunchDefaults {
     pub backend: Option<Backend>,
     pub session: Option<String>,
+    pub tab: Option<String>,
     pub target: Option<Target>,
     pub cwd: Option<PathBuf>,
 }

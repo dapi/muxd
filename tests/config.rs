@@ -30,6 +30,7 @@ fn load_parses_defaults_from_config_file() {
         r#"[defaults]
 backend = "zellij"
 session = "work"
+tab = "triage"
 target = "new-pane"
 cwd = "/repo"
 "#,
@@ -40,6 +41,7 @@ cwd = "/repo"
 
     assert_eq!(config.defaults.backend, Some(Backend::Zellij));
     assert_eq!(config.defaults.session.as_deref(), Some("work"));
+    assert_eq!(config.defaults.tab.as_deref(), Some("triage"));
     assert_eq!(config.defaults.target, Some(Target::NewPane));
     assert_eq!(
         config.defaults.cwd.as_deref(),
