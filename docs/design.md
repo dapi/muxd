@@ -2,87 +2,91 @@
 
 Date: 2026-03-13
 
+## Purpose
+
+This document is the top-level architecture overview for `muxd`.
+
+Use it to understand the current product shape before going into deeper documents.
+
+Supporting documents:
+
+- product scope: `docs/product/prd.md`
+- roadmap: `docs/product/roadmap.md`
+- workflow: `docs/process/spec-driven-development.md`
+- launch CLI contract: `docs/architecture/launch-cli.md`
+- backend notes: `docs/architecture/backends/zellij.md`
+- execution plan: `docs/plans/2026-03-13-implementation-plan.md`
+- decisions: `docs/adr/`
+
 ## Overview
 
-`muxd` is a standalone task dispatcher for terminal multiplexers.
+`muxd` is a thin CLI wrapper for launching arbitrary commands into an existing terminal multiplexer session.
 
-It runs as a local daemon, accepts task requests over a Unix socket, schedules them, launches them inside an existing multiplexer session, and reports lifecycle state back to CLI clients.
+The first release targets Zellij and is intended to be called from `systemd --user` timers and other local automation.
 
-The first backend is Zellij. The architecture must stay suitable for a later tmux backend without rewriting the core queue, IPC, or task model.
+The current product is intentionally not a daemon or dispatcher.
 
 ## Product Goal
 
-Make execution inside a terminal multiplexer scriptable, observable, and queueable through one stable interface.
+Make recurring launches into an existing multiplexer session simple, stable, and script-friendly.
 
 Representative use cases:
 
-- queue three review tasks into one session
-- block in a shell script until a oneshot task finishes
-- inspect pending and running work from another terminal
-- later: switch backend from Zellij to tmux without changing the user-facing task model
+- a `systemd --user` timer runs `muxd launch` instead of embedding raw Zellij syntax
+- a developer standardizes launch naming, target selection, and working directory through one CLI
+- later: add tmux support without forcing callers to rewrite their launch contract
 
-## Non-Goals for MVP
+## Non-Goals for Current Release
 
-- no network API
-- no scheduler
-- no webhooks
-- no persistence beyond what is required for correct local daemon behavior
-- no attempt to hide every backend-specific limitation
+- no daemon
+- no Unix socket IPC
+- no queue
+- no task ids
+- no `list`, `status`, or `cancel`
+- no persistence
+- no tmux in the first release
 
 ## Design Principles
 
-- backend-neutral core
-- backend-specific adapters
-- explicit lifecycle semantics
-- honest cancellation behavior
-- script-friendly CLI and IPC
+- thin wrapper first
+- backend-specific launch logic stays in adapters
+- stable automation-facing CLI
+- explicit validation and failure modes
+- no fake abstraction over unsupported backend semantics
 
 ## User Stories
 
-### US-1: Queue work
+### US-1: Launch from timer
 
-As a developer, I want to enqueue several tasks against the same multiplexer session so they run without manual tab or pane management.
+As a developer, I want a `systemd --user` timer to call one stable command that launches work into an existing Zellij session.
 
-### US-2: Wait in scripts
+### US-2: Avoid backend syntax
 
-As a developer, I want `enqueue --wait` to block until a task finishes so I can use `muxd` in scripts and automation.
+As a developer, I want to avoid copying raw Zellij command forms into every script and timer unit.
 
-### US-3: Inspect load
+### US-3: Add backends later
 
-As a developer, I want to list pending and running tasks so I can see what the dispatcher is doing.
-
-### US-4: Add backends later
-
-As a maintainer, I want backend-specific logic isolated so tmux support can be added later without disturbing queueing, IPC, and lifecycle code.
+As a maintainer, I want backend command construction isolated so tmux can be evaluated later without changing the user-facing contract too early.
 
 ## Core Concepts
 
-### Task
+### Launch request
 
-A task is one requested execution inside a multiplexer backend.
+A launch request is one CLI invocation that asks `muxd` to place a command into a backend session.
 
-Canonical fields:
+Canonical fields for the first release:
 
-- `id`
-- `prompt`
-- `agent`
 - `backend`
 - `session`
 - `target`
-- `mode`
 - `name`
 - `cwd`
-- `status`
-- `created_at`
-- `started_at`
-- `completed_at`
-- `exit_code`
-- `error`
-- `backend_handle`
+- `command`
+- `args`
 
 ### Backend
 
-Backend is a first-class part of the task model even though MVP supports only Zellij.
+Backend remains a first-class concept even though the first release supports only Zellij.
 
 Initial backend enum:
 
@@ -91,210 +95,106 @@ Initial backend enum:
 
 ### Target
 
-Target describes where the backend should place the task.
+Target describes where the backend should place the launched command.
 
-Portable values for now:
+The first release should support only the smallest safe target set.
 
-- `new_tab`
+Portable values to keep in view:
+
 - `new_pane`
 - `floating_pane`
+- `new_tab`
 
-Not every backend will support every target in the same way. Unsupported combinations should fail explicitly.
-
-### Mode
-
-- `oneshot`
-- `interactive`
-
-`oneshot` means the dispatcher is expected to observe natural completion and record exit state.
-
-`interactive` means the dispatcher launches a user-facing interactive process and monitors backend state until it exits or disappears.
-
-### Status
-
-- `pending`
-- `running`
-- `completed`
-- `failed`
-- `cancelled`
-
-These statuses are backend-neutral. Backend details should be attached separately when needed, not leaked into the status enum.
-
-## Lifecycle Semantics
-
-### Completion
-
-- `completed`: task finished successfully by backend-observed exit status
-- `failed`: task terminated with backend-observed failure or launch error
-- `cancelled`: task was cancelled by user intent, regardless of whether backend process termination was guaranteed
-
-### Cancellation
-
-`cancelled` means the dispatcher stopped treating the task as active work.
-
-It does not automatically mean:
-
-- subprocess definitely died
-- pane/window definitely disappeared
-- backend guaranteed termination
-
-If a backend cannot guarantee hard termination, that limitation should be reflected in `error` or backend details, not hidden.
+Unsupported targets should fail explicitly.
 
 ## Architecture
 
 ### Components
 
-- daemon
-- CLI client
-- task store and scheduler
-- IPC protocol
+- CLI parser
+- launch request validator
 - backend adapter interface
-- Zellij backend
-- config loader
+- Zellij backend adapter
+- optional config loader in a later slice
 
 ### Logical Flow
 
-1. CLI sends a request over Unix socket
-2. daemon validates request and creates a task
-3. scheduler picks the next runnable task
-4. backend adapter launches or monitors it
-5. daemon updates lifecycle state
-6. CLI queries or waits for terminal state
+1. caller invokes `muxd launch`
+2. CLI validates arguments and environment
+3. backend adapter maps the request to backend command syntax
+4. `muxd` executes the backend command
+5. CLI returns a stable exit code and user-facing message
 
 ## Backend Architecture
 
-## Separation Rule
+### Separation Rule
 
 The core must not know:
 
 - exact Zellij command syntax
 - exact tmux command syntax
-- pane/window ids of a specific backend format
-- backend-specific polling or cancellation tricks
+- backend-specific flag quirks
+- backend-specific launch workarounds
 
 That logic belongs inside backend adapters.
 
 ### Backend Adapter Responsibilities
 
 - preflight validation
-- launch execution
-- lifecycle polling
-- best-effort cancellation
-- normalization of backend-specific handles into `backend_handle`
+- launch command construction
+- environment-specific feature checks
+- best-effort support for optional blocking paths in later slices
 
 ### Core Responsibilities
 
-- queueing
-- state transitions
-- IPC
-- config defaults
 - CLI semantics
-- status rendering
+- argument validation
+- exit code semantics
+- config defaults in later slices
 
-## Backend Capability Model
-
-To avoid false portability, backend support should be modeled explicitly.
-
-Each backend adapter should answer:
-
-- supported targets
-- supported modes
-- whether oneshot can block directly
-- whether interactive completion requires polling
-- whether cancellation is best-effort or strong
-
-This can stay internal for MVP, but the design should assume these capabilities differ.
-
-## Zellij MVP
+## Zellij First Release
 
 Confirmed working assumptions:
 
-- session is selected with `zellij -s <session> ...`
-- oneshot launch can block with `--block-until-exit`
-- interactive launch requires polling
+- session selection works through `zellij -s <session> ...`
+- `--cwd` is supported for `run`
 - pane and tab naming are available
-- `--cwd` is supported natively
-- arbitrary pane cancellation is limited
+- launch placement differs by target
 
 Implication:
 
-- Zellij is a good first backend
-- cancellation semantics must stay honest
+- Zellij is a good first backend for a thin wrapper
+- target support should expand carefully rather than all at once
 
-## tmux Future Direction
+Detailed backend notes live in:
 
-tmux should be added as a second backend implementation, not as branching logic spread through daemon code.
+- `docs/architecture/backends/zellij.md`
 
-Differences expected to stay backend-local:
+## Scheduler Boundary
 
-- command construction
-- session/window/pane identifiers
-- launch placement model
-- lifecycle inspection
-- cancellation capabilities
-- output capture
+Scheduling belongs outside `muxd`.
 
-Before adding tmux, the project should review whether any Zellij assumptions leaked into core APIs.
+The current intended scheduler is:
 
-## CLI and IPC
+- `systemd --user` timers
 
-### CLI Shape
+This keeps the first release focused on launch semantics rather than scheduling or orchestration.
 
-Expected command family:
+## Future Direction
 
-- `muxd run`
-- `muxd enqueue`
-- `muxd list`
-- `muxd status`
-- `muxd cancel`
+If the thin wrapper proves useful, later slices may add:
 
-### IPC Choice
+- honest blocking behavior where the backend supports it
+- defaults/config
+- more launch targets
+- tmux support
 
-Local Unix socket with NDJSON is sufficient for MVP.
-
-Reasons:
-
-- easy to inspect manually
-- easy to script
-- stack-neutral
-- low ceremony for daemon/CLI split
-
-## Config
-
-Config should express semantics, not implementation library preferences.
-
-Required defaults:
-
-- default backend
-- default session
-- default agent
-- default target
-- default mode
-- max concurrent
-- max pending
-
-Backend-specific config should be namespaced so tmux and Zellij can evolve independently.
+Dispatcher-style features should be treated as a later product expansion, not as hidden MVP work.
 
 ## Stack Decision
 
-The implementation stack is intentionally still open.
+The implementation stack is Rust.
 
-The decision between Go and Rust is tracked in:
+The decision is recorded in:
 
 - `docs/adr/0001-stack-selection.md`
-
-Architecture should stay stack-neutral until that ADR is accepted.
-
-## Risks
-
-- backend portability may tempt premature abstraction
-- cancellation semantics may remain backend-specific
-- agent CLIs may evolve independently from `muxd`
-- one backend may need concepts that do not map cleanly to another
-
-## Decision Guardrails
-
-- keep task model backend-neutral
-- keep backend capabilities explicit
-- do not pretend portability where semantics differ
-- add tmux only after Zellij MVP validates the core boundary
