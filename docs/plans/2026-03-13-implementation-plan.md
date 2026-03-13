@@ -20,8 +20,12 @@ This plan intentionally starts with a stack decision. Earlier dispatcher plannin
 
 Reference documents:
 
+- `docs/product/prd.md`
 - `docs/design.md`
+- `docs/architecture/cli-and-ipc.md`
+- `docs/architecture/backends/zellij.md`
 - `docs/adr/0001-stack-selection.md`
+- `docs/process/spec-driven-development.md`
 
 ## Phase 0: Stack Decision
 

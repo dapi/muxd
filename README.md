@@ -10,9 +10,14 @@ This repository is in planning stage.
 
 Current documents:
 
+- `docs/README.md` - documentation map and artifact roles
+- `docs/product/prd.md` - product requirements document
 - `docs/design.md` - product and architecture design
+- `docs/process/spec-driven-development.md` - documentation and delivery workflow
+- `docs/architecture/cli-and-ipc.md` - expected CLI and Unix socket contract
+- `docs/architecture/backends/zellij.md` - Zellij-specific launch semantics and limitations
 - `docs/adr/0001-stack-selection.md` - stack decision record for Go vs Rust
-- `docs/stack-evaluation.md` - comparison document used before accepting the stack ADR
+- `docs/research/2026-03-13-stack-evaluation.md` - comparison document used before accepting the stack ADR
 - `docs/plans/2026-03-13-implementation-plan.md` - phased implementation plan
 
 ## Scope

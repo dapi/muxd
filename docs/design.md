@@ -2,6 +2,22 @@
 
 Date: 2026-03-13
 
+## Purpose
+
+This document is the top-level architecture overview for `muxd`.
+
+Use it to understand the system shape and design guardrails before going into deeper documents.
+
+Supporting documents:
+
+- product scope: `docs/product/prd.md`
+- workflow: `docs/process/spec-driven-development.md`
+- CLI and IPC contract: `docs/architecture/cli-and-ipc.md`
+- backend notes: `docs/architecture/backends/zellij.md`
+- execution plan: `docs/plans/2026-03-13-implementation-plan.md`
+- stack research: `docs/research/2026-03-13-stack-evaluation.md`
+- decisions: `docs/adr/`
+
 ## Overview
 
 `muxd` is a standalone task dispatcher for terminal multiplexers.
@@ -163,7 +179,7 @@ If a backend cannot guarantee hard termination, that limitation should be reflec
 
 ## Backend Architecture
 
-## Separation Rule
+### Separation Rule
 
 The core must not know:
 
@@ -221,6 +237,10 @@ Implication:
 - Zellij is a good first backend
 - cancellation semantics must stay honest
 
+Detailed backend notes live in:
+
+- `docs/architecture/backends/zellij.md`
+
 ## tmux Future Direction
 
 tmux should be added as a second backend implementation, not as branching logic spread through daemon code.
@@ -258,6 +278,10 @@ Reasons:
 - easy to script
 - stack-neutral
 - low ceremony for daemon/CLI split
+
+The concrete MVP contract is tracked in:
+
+- `docs/architecture/cli-and-ipc.md`
 
 ## Config
 
