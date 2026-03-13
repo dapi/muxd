@@ -61,6 +61,95 @@ fn missing_session_returns_resource_unavailable() {
 }
 
 #[test]
+fn config_can_supply_session_target_and_cwd() {
+    let fake = FakeZellij::new("work\n");
+    let config_home = TempDir::new().expect("config dir");
+    let repo_dir = TempDir::new().expect("repo dir");
+    write_config(
+        &config_home,
+        &format!(
+            "[defaults]\nsession = \"work\"\ntarget = \"new-pane\"\ncwd = \"{}\"\n",
+            repo_dir.path().display()
+        ),
+    );
+
+    let mut command = Command::cargo_bin("muxd").expect("binary should build");
+    command
+        .env("PATH", fake.bin_dir())
+        .env("XDG_CONFIG_HOME", config_home.path())
+        .env("FAKE_ZELLIJ_LOG", fake.log_path())
+        .args(["launch", "--", "echo", "hello"]);
+
+    command.assert().success();
+
+    let log = fs::read_to_string(fake.log_path()).expect("log should exist");
+    assert!(log.contains("SESSION=work"));
+    assert!(log.contains("ARGS=--cwd|"));
+    assert!(log.contains(repo_dir.path().to_str().expect("utf8 path")));
+}
+
+#[test]
+fn cli_values_override_config_values() {
+    let fake = FakeZellij::new("config-session\ncli-session\n");
+    let config_home = TempDir::new().expect("config dir");
+    let config_repo = TempDir::new().expect("config repo dir");
+    let cli_repo = TempDir::new().expect("cli repo dir");
+    write_config(
+        &config_home,
+        &format!(
+            "[defaults]\nsession = \"config-session\"\ntarget = \"new-pane\"\ncwd = \"{}\"\n",
+            config_repo.path().display()
+        ),
+    );
+
+    let mut command = Command::cargo_bin("muxd").expect("binary should build");
+    command
+        .env("PATH", fake.bin_dir())
+        .env("XDG_CONFIG_HOME", config_home.path())
+        .env("FAKE_ZELLIJ_LOG", fake.log_path())
+        .args([
+            "launch",
+            "--session",
+            "cli-session",
+            "--target",
+            "new-pane",
+            "--cwd",
+            cli_repo.path().to_str().expect("utf8 path"),
+            "--",
+            "echo",
+            "hello",
+        ]);
+
+    command.assert().success();
+
+    let log = fs::read_to_string(fake.log_path()).expect("log should exist");
+    assert!(log.contains("SESSION=cli-session"));
+    assert!(log.contains(cli_repo.path().to_str().expect("utf8 path")));
+    assert!(!log.contains(&format!("SESSION={}", "config-session")));
+}
+
+#[test]
+fn invalid_config_returns_invalid_input_exit_code() {
+    let fake = FakeZellij::new("work\n");
+    let config_home = TempDir::new().expect("config dir");
+    write_config(
+        &config_home,
+        "[defaults]\ntarget = \"floating-pane\"\nsession = \"work\"\n",
+    );
+
+    let mut command = Command::cargo_bin("muxd").expect("binary should build");
+    command
+        .env("PATH", fake.bin_dir())
+        .env("XDG_CONFIG_HOME", config_home.path())
+        .args(["launch", "--", "echo", "hello"]);
+
+    command
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains("invalid config"));
+}
+
+#[test]
 fn successful_launch_uses_expected_zellij_command_shape() {
     let fake = FakeZellij::new("work\n");
     let working_dir = TempDir::new().expect("working dir");
@@ -194,4 +283,10 @@ echo "unexpected invocation: $*" >&2
 exit 99
 "#
     )
+}
+
+fn write_config(config_home: &TempDir, contents: &str) {
+    let config_dir = config_home.path().join("muxd");
+    fs::create_dir_all(&config_dir).expect("config dir");
+    fs::write(config_dir.join("config.toml"), contents).expect("config write");
 }

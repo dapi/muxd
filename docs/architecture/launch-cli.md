@@ -52,12 +52,24 @@ muxd launch --session work --target new_pane --cwd /repo --name nightly-report -
 - execute that backend command
 - return a stable exit code to the caller
 
+When a config file is present:
+
+- missing launch inputs may be filled from config defaults
+- explicit CLI flags override config values
+- config should remain transparent rather than introducing hidden launch behavior
+
 The first release should not:
 
 - create a daemon
 - assign task ids
 - maintain state after launch
 - expose queue semantics
+
+Current documented config scope:
+
+- defaults for backend, session, target, and cwd
+- one user-level config file
+- no named profiles yet
 
 ## Exit Codes
 

@@ -40,18 +40,7 @@ Active execution plan:
 
 - `docs/plans/2026-03-13-stage-1-delivery-plan.md`
 
-## R1: Honest blocking path
-
-Goal:
-
-- add `--wait` only where the backend can support it cleanly
-
-Scope:
-
-- blocking launch for supported target paths
-- documented semantic differences where Zellij cannot block directly
-
-## R2: Defaults and ergonomics
+## R1: Defaults and ergonomics
 
 Goal:
 
@@ -62,7 +51,32 @@ Scope:
 - config/defaults for session, target, and working directory
 - clearer naming conventions
 - better human help and examples
-- optional default launch profile for recurring workflows such as issue analysis
+- one documented user-level config file
+
+Active spec:
+
+- `docs/specs/2026-03-13-launch-defaults-config.md`
+
+Why next:
+
+- this better supports the primary `systemd --user` timer use case
+- it removes repeated boilerplate without pulling the product toward lifecycle orchestration
+
+## R2: Honest blocking path
+
+Goal:
+
+- add `--wait` only where the backend can support it cleanly
+
+Scope:
+
+- blocking launch for supported target paths
+- documented semantic differences where Zellij cannot block directly
+
+Guardrail:
+
+- `--wait` must not smuggle daemon or task-tracking semantics back into the thin-wrapper product
+- `--wait` stays deferred until after the defaults/config slice is complete
 
 ## R3: Target expansion
 

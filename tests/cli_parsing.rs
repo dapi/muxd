@@ -1,4 +1,5 @@
-use muxd::cli::{Cli, Commands, LaunchArgs};
+use muxd::cli::{Cli, Commands, LaunchArgs, resolve_launch_request};
+use muxd::config::{FileConfig, LaunchDefaults};
 use muxd::model::{Backend, LaunchRequest, Target};
 use std::path::PathBuf;
 
@@ -18,7 +19,7 @@ fn parses_minimal_launch_command() {
 
     match cli.command {
         Commands::Launch(args) => {
-            assert_eq!(args.session, "work");
+            assert_eq!(args.session.as_deref(), Some("work"));
             assert_eq!(args.payload, vec!["echo".to_string(), "hello".to_string()]);
         }
     }
@@ -54,9 +55,9 @@ fn parses_launch_command_with_optional_fields() {
 #[test]
 fn converts_launch_args_into_request() {
     let args = LaunchArgs {
-        backend: muxd::cli::BackendArg::Zellij,
-        session: "work".to_string(),
-        target: muxd::cli::TargetArg::NewPane,
+        backend: Some(muxd::cli::BackendArg::Zellij),
+        session: Some("work".to_string()),
+        target: Some(muxd::cli::TargetArg::NewPane),
         cwd: Some(PathBuf::from("/repo")),
         name: Some("nightly-report".to_string()),
         payload: vec!["make".to_string(), "report".to_string()],
@@ -102,4 +103,75 @@ fn rejects_missing_payload_command() {
     ]);
 
     assert!(result.is_err());
+}
+
+#[test]
+fn resolves_missing_session_and_target_from_config() {
+    let args = LaunchArgs {
+        backend: None,
+        session: None,
+        target: None,
+        cwd: None,
+        name: Some("nightly-report".to_string()),
+        payload: vec!["make".to_string(), "report".to_string()],
+    };
+
+    let config = FileConfig {
+        defaults: LaunchDefaults {
+            backend: Some(Backend::Zellij),
+            session: Some("work".to_string()),
+            target: Some(Target::NewPane),
+            cwd: Some(PathBuf::from("/repo")),
+        },
+    };
+
+    let request = resolve_launch_request(args, &config).expect("request should resolve");
+
+    assert_eq!(request.backend, Backend::Zellij);
+    assert_eq!(request.session, "work");
+    assert_eq!(request.target, Target::NewPane);
+    assert_eq!(request.cwd, Some(PathBuf::from("/repo")));
+    assert_eq!(request.name.as_deref(), Some("nightly-report"));
+}
+
+#[test]
+fn cli_values_override_config_values() {
+    let args = LaunchArgs {
+        backend: Some(muxd::cli::BackendArg::Zellij),
+        session: Some("cli-session".to_string()),
+        target: Some(muxd::cli::TargetArg::NewPane),
+        cwd: Some(PathBuf::from("/cli")),
+        name: None,
+        payload: vec!["echo".to_string(), "hello".to_string()],
+    };
+
+    let config = FileConfig {
+        defaults: LaunchDefaults {
+            backend: Some(Backend::Zellij),
+            session: Some("config-session".to_string()),
+            target: Some(Target::NewPane),
+            cwd: Some(PathBuf::from("/config")),
+        },
+    };
+
+    let request = resolve_launch_request(args, &config).expect("request should resolve");
+
+    assert_eq!(request.session, "cli-session");
+    assert_eq!(request.cwd, Some(PathBuf::from("/cli")));
+}
+
+#[test]
+fn rejects_missing_session_after_merge() {
+    let args = LaunchArgs {
+        backend: None,
+        session: None,
+        target: Some(muxd::cli::TargetArg::NewPane),
+        cwd: None,
+        name: None,
+        payload: vec!["echo".to_string(), "hello".to_string()],
+    };
+
+    let error = resolve_launch_request(args, &FileConfig::default())
+        .expect_err("session should be required");
+    assert_eq!(error, "session is required");
 }
