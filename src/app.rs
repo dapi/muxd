@@ -1,7 +1,7 @@
 use crate::backend::zellij::ZellijBackend;
-use crate::cli::{Cli, Commands};
+use crate::cli::{Cli, Commands, resolve_launch_request};
+use crate::config;
 use crate::error::MuxdError;
-use crate::model::LaunchRequest;
 use crate::runtime::SystemRuntime;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -15,7 +15,8 @@ pub struct LaunchSuccess {
 pub fn run(cli: Cli) -> Result<LaunchSuccess, MuxdError> {
     match cli.command {
         Commands::Launch(args) => {
-            let request = LaunchRequest::try_from(args).map_err(MuxdError::InvalidInput)?;
+            let config = config::load()?;
+            let request = resolve_launch_request(args, &config).map_err(MuxdError::InvalidInput)?;
             let runtime = SystemRuntime;
             ZellijBackend::launch(&runtime, &request)
         }

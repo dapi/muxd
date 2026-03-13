@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
+use crate::config::FileConfig;
 use crate::model::{Backend, LaunchRequest, Target};
 
 #[derive(Debug, Parser)]
@@ -18,14 +19,14 @@ pub enum Commands {
 
 #[derive(Debug, Clone, clap::Args)]
 pub struct LaunchArgs {
-    #[arg(long, value_enum, default_value_t = BackendArg::Zellij)]
-    pub backend: BackendArg,
+    #[arg(long, value_enum)]
+    pub backend: Option<BackendArg>,
 
     #[arg(long)]
-    pub session: String,
+    pub session: Option<String>,
 
     #[arg(long, value_enum)]
-    pub target: TargetArg,
+    pub target: Option<TargetArg>,
 
     #[arg(long)]
     pub cwd: Option<PathBuf>,
@@ -76,11 +77,13 @@ impl TryFrom<LaunchArgs> for LaunchRequest {
 
         Ok(LaunchRequest {
             backend: match args.backend {
-                BackendArg::Zellij => Backend::Zellij,
+                Some(BackendArg::Zellij) => Backend::Zellij,
+                None => return Err("backend is required"),
             },
-            session: args.session,
+            session: args.session.ok_or("session is required")?,
             target: match args.target {
-                TargetArg::NewPane => Target::NewPane,
+                Some(TargetArg::NewPane) => Target::NewPane,
+                None => return Err("target is required"),
             },
             cwd: args.cwd,
             name: args.name,
@@ -88,4 +91,39 @@ impl TryFrom<LaunchArgs> for LaunchRequest {
             args: args_vec.to_vec(),
         })
     }
+}
+
+pub fn resolve_launch_request(
+    args: LaunchArgs,
+    config: &FileConfig,
+) -> Result<LaunchRequest, &'static str> {
+    let (command, args_vec) = args
+        .payload
+        .split_first()
+        .ok_or("payload command is required")?;
+
+    let backend = match args.backend {
+        Some(BackendArg::Zellij) => Backend::Zellij,
+        None => config.defaults.backend.unwrap_or(Backend::Zellij),
+    };
+
+    let session = args
+        .session
+        .or_else(|| config.defaults.session.clone())
+        .ok_or("session is required")?;
+
+    let target = match args.target {
+        Some(TargetArg::NewPane) => Target::NewPane,
+        None => config.defaults.target.ok_or("target is required")?,
+    };
+
+    Ok(LaunchRequest {
+        backend,
+        session,
+        target,
+        cwd: args.cwd.or_else(|| config.defaults.cwd.clone()),
+        name: args.name,
+        command: command.clone(),
+        args: args_vec.to_vec(),
+    })
 }

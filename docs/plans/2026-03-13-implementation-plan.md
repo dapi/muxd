@@ -140,3 +140,4 @@ Start the defaults/config slice after stage 1, keeping it focused on reducing `s
 Reference spec:
 
 - `docs/specs/2026-03-13-launch-defaults-config.md`
+- `docs/plans/2026-03-13-defaults-config-delivery-plan.md`
