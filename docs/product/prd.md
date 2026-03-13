@@ -161,8 +161,29 @@ The MVP is successful when:
 ## Open Questions
 
 - which single target should be the first supported path: `new_pane` or `floating_pane`
-- whether `--wait` belongs in the first release or in the next slice
-- whether defaults/config should land before or after the first usable launch flow
+- how far defaults/config should go in the next slice before the wrapper stops feeling thin
+- whether launch profiles should stay generic or grow agent-oriented affordances later
+
+## Next Slice Decision
+
+The next product slice after the first usable launch flow is:
+
+- defaults and config
+
+Reason:
+
+- it directly reduces repeated boilerplate in `systemd --user` timers
+- it supports the documented GitHub issue analysis workflow better than `--wait`
+- it keeps `muxd` in thin-wrapper territory before introducing blocking and lifecycle semantics
+
+`--wait` is deferred until after defaults/config.
+
+Expected scope of that slice:
+
+- one user-level config file
+- defaults for backend, session, target, and cwd
+- CLI-over-config precedence
+- no named profiles yet
 
 ## Related Documents
 

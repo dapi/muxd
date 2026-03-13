@@ -130,9 +130,13 @@ At minimum:
 ## Current Open Questions
 
 - whether `new_pane` should be the only initial target
-- whether `--wait` belongs in the next slice
-- whether config/defaults should come before additional target support
+- whether defaults/config should stop at backend, session, target, and cwd or include naming conventions too
+- whether `--wait` still makes sense after the defaults/config slice is complete
 
 ## Suggested Immediate Next Step
 
-Start Phase 1 with a Rust crate for `muxd launch` and keep the initial target set to a single, low-surprise Zellij path.
+Start the defaults/config slice after stage 1, keeping it focused on reducing `systemd --user` timer boilerplate rather than introducing blocking semantics.
+
+Reference spec:
+
+- `docs/specs/2026-03-13-launch-defaults-config.md`

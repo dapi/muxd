@@ -2,6 +2,8 @@
 
 Date: 2026-03-13
 
+Status: Completed
+
 ## Goal
 
 Deliver the first production stage of `muxd` to GitHub as merged code with:
@@ -12,6 +14,10 @@ Deliver the first production stage of `muxd` to GitHub as merged code with:
 - green GitHub CI
 
 This plan ends only when the code is merged into the default branch.
+
+Completion note:
+
+- stage 1 was merged to the default branch in PR #1
 
 ## Scope
 
