@@ -1,12 +1,22 @@
 # muxd
 
+[![CI](https://github.com/dapi/muxd/actions/workflows/ci.yml/badge.svg)](https://github.com/dapi/muxd/actions/workflows/ci.yml)
+
 `muxd` is a thin launch wrapper for terminal multiplexers.
 
-The current goal is a stable CLI that launches arbitrary commands into an existing Zellij session for local automation, especially `systemd --user` timers. The design should remain compatible with adding tmux later without exposing raw backend syntax directly.
+The current goal is a stable CLI that launches arbitrary commands into a predictable Zellij workspace for local automation and repeated manual runs. The design should remain compatible with adding tmux later without exposing raw backend syntax directly.
 
 ## Status
 
-This repository is in planning stage.
+This repository is in active early implementation.
+
+Current shipped slices:
+
+- `muxd launch`
+- Zellij backend
+- stable exit codes
+- config defaults for backend, session, tab, target, and cwd
+- explicit `--tab`, `--ensure-session`, and `--ensure-tab` workflow helpers
 
 Current documents:
 
@@ -24,21 +34,33 @@ Current documents:
 
 ## Scope
 
-Initial scope:
+Current scope:
 
 - `muxd launch`
-- existing Zellij session
+- Zellij backend
+- session selection
+- optional tab selection
+- explicit session creation with `--ensure-session`
+- explicit tab creation with `--ensure-tab`
 - arbitrary payload command after `--`
+- config defaults for launch inputs
 - stable exit codes and validation errors
-- integration with `systemd --user` timers
 
 Planned later:
 
 - `--wait` where backend behavior is honest
-- defaults and config
-- more targets and workspace helpers
+- more targets
 - tmux backend
 - richer launcher ergonomics
+
+## Development
+
+Core local commands:
+
+- `cargo fmt --check`
+- `cargo clippy --all-targets -- -D warnings`
+- `cargo test`
+- `cargo llvm-cov --summary-only --ignore-filename-regex '(tests|src/main.rs)' --fail-under-lines 80`
 
 ## Design Principles
 
@@ -50,6 +72,6 @@ Planned later:
 
 ## Open Questions
 
-- which first target should ship: `new_pane` or `floating_pane`
 - whether `--wait` belongs in the next slice
-- how far defaults/config should go before the wrapper stops feeling thin
+- which next target should ship after `new_pane`
+- how far repeated agent-oriented ergonomics should go before the wrapper stops feeling thin
