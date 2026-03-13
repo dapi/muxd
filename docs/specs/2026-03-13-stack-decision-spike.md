@@ -2,7 +2,7 @@
 
 Date: 2026-03-13
 
-Status: Draft
+Status: Completed
 
 ## Summary
 
@@ -107,6 +107,5 @@ Validation should record:
 
 ## Follow-up Work
 
-- update stack evaluation findings with actual spike observations
-- accept or revise the stack ADR
-- if the ADR is accepted, replace spike work with a real production skeleton
+- start the Rust production skeleton
+- define the first crate boundaries for daemon, CLI, core, and backend adapters

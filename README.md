@@ -16,7 +16,7 @@ Current documents:
 - `docs/process/spec-driven-development.md` - documentation and delivery workflow
 - `docs/architecture/cli-and-ipc.md` - expected CLI and Unix socket contract
 - `docs/architecture/backends/zellij.md` - Zellij-specific launch semantics and limitations
-- `docs/adr/0001-stack-selection.md` - stack decision record for Go vs Rust
+- `docs/adr/0001-stack-selection.md` - accepted Rust stack decision
 - `docs/research/2026-03-13-stack-evaluation.md` - comparison document used before accepting the stack ADR
 - `docs/plans/2026-03-13-implementation-plan.md` - phased implementation plan
 
@@ -47,7 +47,6 @@ Planned later:
 
 ## Open Questions
 
-- implementation stack: Go or Rust
 - persistence format and storage strategy
 - how much backend capability should be normalized vs exposed directly
 - what "cancel" can reliably mean across different multiplexers

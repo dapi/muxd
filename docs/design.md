@@ -301,13 +301,13 @@ Backend-specific config should be namespaced so tmux and Zellij can evolve indep
 
 ## Stack Decision
 
-The implementation stack is intentionally still open.
+The implementation stack is Rust.
 
-The decision between Go and Rust is tracked in:
+The decision is recorded in:
 
 - `docs/adr/0001-stack-selection.md`
 
-Architecture should stay stack-neutral until that ADR is accepted.
+Architecture should still stay backend-neutral even though the implementation stack is now fixed.
 
 ## Risks
 

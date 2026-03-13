@@ -10,6 +10,10 @@ It is not the final decision record. The final decision should be captured in:
 
 - `docs/adr/0001-stack-selection.md`
 
+Decision status:
+
+- Rust was accepted on 2026-03-13 in `docs/adr/0001-stack-selection.md`
+
 ## Project Requirements
 
 `muxd` needs:
@@ -247,11 +251,15 @@ Questions answered by the spikes:
 3. Which version made task lifecycle state feel safer?
    Rust, for the same modeling reasons.
 4. Which tradeoff matters more for `muxd` right now: MVP speed or stronger invariants?
-   Still open, but now based on actual spike work rather than assumptions.
+   Stronger invariants, because `muxd` is primarily a lifecycle and boundary-management tool.
 
-## Working Recommendation After Spikes
+## Conclusion
 
-- slight lean toward Go for MVP speed and lower implementation friction
-- slight lean toward Rust for architectural rigor and lifecycle modeling
+Rust is the better fit for this repository now.
 
-The spikes confirmed the original tradeoff rather than collapsing it. The repository now has enough evidence to update the ADR deliberately instead of guessing.
+Reason:
+
+- the project values backend-neutral boundaries and precise lifecycle semantics more than the shortest path to a first daemon
+- those priorities line up better with Rust than with Go
+
+The spikes confirmed the original tradeoff, but they also made the decision frame clearer enough to accept Rust deliberately rather than keep deferring.

@@ -121,10 +121,12 @@ If uncertainty is still high, add research before implementation instead of codi
 
 ## Current Repository Rule
 
-Until `docs/adr/0001-stack-selection.md` is accepted:
+`docs/adr/0001-stack-selection.md` is accepted and the implementation stack is Rust.
 
-- do not add a production source tree
-- keep new work focused on product, architecture, research, specs, and plans
+Current expectation:
+
+- new production code should follow an approved spec, ADR set, and execution plan
+- implementation should preserve the documented backend-neutral core and lifecycle semantics
 
 ## Authoring Guidance
 

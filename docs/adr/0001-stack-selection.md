@@ -2,7 +2,7 @@
 
 Date: 2026-03-13
 
-Status: Proposed
+Status: Accepted
 
 ## Context
 
@@ -58,35 +58,39 @@ Costs:
 
 ## Decision
 
-Decision still pending final stack choice.
+Choose Rust for the `muxd` MVP.
 
-Minimal comparison spikes have now been completed and are captured in:
+Chosen stack:
+
+- Rust
+
+Rejected stack for now:
+
+- Go
+
+Decision rationale:
+
+- `muxd` is fundamentally a lifecycle and boundary-management system, not just a subprocess wrapper
+- the core risk is semantic drift across task states, cancellation behavior, and backend adapter boundaries
+- Rust gives stronger compile-time pressure for modeling valid states, explicit capability differences, and backend-neutral APIs
+- that pressure aligns well with spec-driven and agent-assisted development, where the compiler can enforce more of the intended structure
+- the spike confirmed that Go is faster for raw MVP iteration, but did not change the architectural preference toward stronger invariants
+
+Evidence used for the decision:
 
 - `spikes/stack-decision/`
 - `docs/research/2026-03-13-stack-evaluation.md`
 
-Comparison input for that decision lives in:
+Tradeoffs accepted:
 
-- `docs/research/2026-03-13-stack-evaluation.md`
-
-The repository will build two tiny equivalents in Go and Rust before production code starts:
-
-- open Unix socket
-- accept one JSON request
-- spawn a subprocess
-- return exit status
-
-This ADR should next be updated from `Proposed` to `Accepted` with:
-
-- chosen stack
-- rejected stack
-- short rationale
-- concrete tradeoffs accepted
+- slower MVP iteration than Go
+- more up-front type and error-modeling work
+- more implementation friction around concurrency and process orchestration
 
 ## Consequences
 
-Until this ADR is accepted:
-
-- no production code tree should be created
-- docs may describe architecture and interfaces, but not stack-specific package layout
-- config/parser decisions should remain semantic, not library-driven
+- a Rust production source tree may now be added
+- package and module layout should follow Rust conventions, not generic placeholders
+- protocol, task lifecycle, and backend capability modeling should lean into Rust enums and explicit typed boundaries
+- config and parser choices may now be made in a Rust-specific implementation context
+- Go remains a valid comparison reference, but it is no longer the active implementation path

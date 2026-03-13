@@ -4,7 +4,7 @@
 
 This directory is the source of truth for product scope, architecture, specs, decisions, research, and delivery plans.
 
-The repo is still documentation-first. No production source tree should be added until `docs/adr/0001-stack-selection.md` is accepted.
+The repo started documentation-first. `docs/adr/0001-stack-selection.md` is now accepted, so production Rust code may be added as long as it follows the documented product and architecture boundaries.
 
 ## Document Map
 

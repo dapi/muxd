@@ -102,8 +102,8 @@ The MVP is successful when:
 
 ## Constraints
 
-- the repository remains documentation-first until the stack ADR is accepted
-- stack choice is still open between Go and Rust
+- the implementation must follow the accepted Rust stack decision
+- the implementation stack is Rust
 - cancellation guarantees are limited by backend capabilities
 - configuration semantics should stay stack-neutral until implementation starts
 
@@ -116,7 +116,6 @@ The MVP is successful when:
 
 ## Open Questions
 
-- Go vs Rust for MVP implementation
 - config format after stack selection
 - whether persistence belongs in MVP or immediately after it
 - whether `agent` should be a first-class concept or just command construction input

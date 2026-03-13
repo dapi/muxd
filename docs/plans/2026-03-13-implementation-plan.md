@@ -16,7 +16,7 @@ Design constraint:
 
 ## Before Coding
 
-This plan intentionally starts with a stack decision. Earlier dispatcher planning already proved the product direction is viable, but this new repository should not inherit a stack choice by inertia.
+This plan started with a stack decision so the repository would not inherit a language by inertia. That decision is now closed in favor of Rust.
 
 Reference documents:
 
@@ -74,6 +74,11 @@ Create a short decision note with:
 Exit criterion:
 
 - repository commits to one stack for MVP
+
+Status:
+
+- completed on 2026-03-13
+- Rust selected in `docs/adr/0001-stack-selection.md`
 
 ## Phase 1: Product Skeleton
 
@@ -261,11 +266,10 @@ Output:
 
 ## Current Open Questions
 
-- Go vs Rust
 - config format after stack selection
 - whether persistence belongs in MVP or immediately after it
 - whether agent execution should be first-class or just treated as arbitrary commands
 
 ## Suggested Immediate Next Step
 
-Do Phase 0 first and avoid writing production code before the stack note exists.
+Start Phase 1 with a Rust repository skeleton and define the first production crate layout around daemon, CLI, core types, and backend adapters.
