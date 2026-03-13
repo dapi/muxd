@@ -1,28 +1,22 @@
-use muxd::config::{FileConfig, default_config_path, load};
+use muxd::config::{FileConfig, default_config_path_from, load_from_path};
 use muxd::model::{Backend, Target};
 use std::fs;
+use std::path::PathBuf;
 use tempfile::TempDir;
 
 #[test]
 fn default_config_path_prefers_xdg_config_home() {
     let dir = TempDir::new().expect("temp dir");
-    unsafe {
-        std::env::set_var("XDG_CONFIG_HOME", dir.path());
-        std::env::remove_var("HOME");
-    }
-
-    let path = default_config_path().expect("path should resolve");
+    let path = default_config_path_from(Some(PathBuf::from(dir.path())), None)
+        .expect("path should resolve");
     assert_eq!(path, dir.path().join("muxd").join("config.toml"));
 }
 
 #[test]
 fn load_returns_default_when_config_is_missing() {
     let dir = TempDir::new().expect("temp dir");
-    unsafe {
-        std::env::set_var("XDG_CONFIG_HOME", dir.path());
-    }
-
-    let config = load().expect("missing config should be fine");
+    let config = load_from_path(&dir.path().join("muxd").join("config.toml"))
+        .expect("missing config should be fine");
     assert_eq!(config, FileConfig::default());
 }
 
@@ -42,11 +36,7 @@ cwd = "/repo"
     )
     .expect("config write");
 
-    unsafe {
-        std::env::set_var("XDG_CONFIG_HOME", dir.path());
-    }
-
-    let config = load().expect("config should parse");
+    let config = load_from_path(&config_dir.join("config.toml")).expect("config should parse");
 
     assert_eq!(config.defaults.backend, Some(Backend::Zellij));
     assert_eq!(config.defaults.session.as_deref(), Some("work"));
@@ -64,15 +54,11 @@ fn invalid_config_returns_error() {
     fs::create_dir_all(&config_dir).expect("config dir");
     fs::write(
         config_dir.join("config.toml"),
-        "[defaults]\ntarget = \"bad\"\n",
+        "[defaults]\nsession = \"work\"\ntarget = \"bad\"\n",
     )
     .expect("config write");
 
-    unsafe {
-        std::env::set_var("XDG_CONFIG_HOME", dir.path());
-    }
-
-    let error = load().expect_err("config should fail");
+    let error = load_from_path(&config_dir.join("config.toml")).expect_err("config should fail");
     assert!(
         error.to_string().contains("invalid config at"),
         "unexpected error: {error}"

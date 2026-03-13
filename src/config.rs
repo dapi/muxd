@@ -1,7 +1,6 @@
 use serde::Deserialize;
-use std::env;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::error::MuxdError;
 use crate::model::{Backend, Target};
@@ -25,7 +24,11 @@ pub fn load() -> Result<FileConfig, MuxdError> {
         return Ok(FileConfig::default());
     };
 
-    match fs::read_to_string(&path) {
+    load_from_path(&path)
+}
+
+pub fn load_from_path(path: &Path) -> Result<FileConfig, MuxdError> {
+    match fs::read_to_string(path) {
         Ok(contents) => toml::from_str(&contents).map_err(|error| {
             MuxdError::InvalidConfig(format!("invalid config at {}: {}", path.display(), error))
         }),
@@ -39,14 +42,19 @@ pub fn load() -> Result<FileConfig, MuxdError> {
 }
 
 pub fn default_config_path() -> Option<PathBuf> {
-    if let Some(xdg) = env::var_os("XDG_CONFIG_HOME") {
-        return Some(PathBuf::from(xdg).join("muxd").join("config.toml"));
+    default_config_path_from(
+        std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from),
+        std::env::var_os("HOME").map(PathBuf::from),
+    )
+}
+
+pub fn default_config_path_from(
+    xdg_config_home: Option<PathBuf>,
+    home: Option<PathBuf>,
+) -> Option<PathBuf> {
+    if let Some(xdg) = xdg_config_home {
+        return Some(xdg.join("muxd").join("config.toml"));
     }
 
-    env::var_os("HOME").map(|home| {
-        PathBuf::from(home)
-            .join(".config")
-            .join("muxd")
-            .join("config.toml")
-    })
+    home.map(|home| home.join(".config").join("muxd").join("config.toml"))
 }
