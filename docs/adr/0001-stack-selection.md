@@ -58,7 +58,12 @@ Costs:
 
 ## Decision
 
-Decision deferred until minimal spikes are completed.
+Decision still pending final stack choice.
+
+Minimal comparison spikes have now been completed and are captured in:
+
+- `spikes/stack-decision/`
+- `docs/research/2026-03-13-stack-evaluation.md`
 
 Comparison input for that decision lives in:
 
@@ -71,7 +76,7 @@ The repository will build two tiny equivalents in Go and Rust before production 
 - spawn a subprocess
 - return exit status
 
-After that, this ADR should be updated from `Proposed` to `Accepted` with:
+This ADR should next be updated from `Proposed` to `Accepted` with:
 
 - chosen stack
 - rejected stack

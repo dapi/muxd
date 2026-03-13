@@ -18,4 +18,6 @@ Start from:
 
 - `docs/templates/spec-template.md`
 
-There are no approved implementation-ready specs yet. The current repo is still closing the stack decision and documentation structure.
+Current draft specs:
+
+- `docs/specs/2026-03-13-stack-decision-spike.md`

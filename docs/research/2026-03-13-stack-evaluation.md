@@ -204,34 +204,54 @@ Go has an advantage if:
 
 ## Recommended Next Step
 
-Do two tiny implementation spikes before deciding:
+Run the disposable implementation spikes in:
 
-### Go spike
+- `spikes/stack-decision/go`
+- `spikes/stack-decision/rust`
 
-- open Unix socket
-- accept one JSON request
-- run `echo hello`
-- return exit status
+Build and run commands are documented in:
 
-### Rust spike
+- `spikes/stack-decision/README.md`
 
-- open Unix socket
-- accept one JSON request
-- run `echo hello`
-- return exit status
+## Spike Validation Notes
 
-Then answer:
+Date:
+
+- 2026-03-13
+
+Observed environment:
+
+- Rust toolchain was already installed
+- Go toolchain was not installed and was downloaded temporarily to `/tmp/muxd-go`
+
+Validated behavior:
+
+- both spikes successfully bound a Unix socket, accepted one JSON request, ran `sh -c 'echo hello'`, and returned `exit_code: 0`
+- both spikes successfully ran `sh -c 'exit 7'` and returned `exit_code: 7`
+- both spikes exit after serving one request, keeping the validation path deterministic
+
+Qualitative notes from the spike:
+
+- Go reached a working shape with only the standard library and no external dependencies
+- Rust required `serde` and `serde_json`, plus the initial Cargo dependency fetch
+- both codebases stayed small and easy to reason about for this narrow flow
+- Rust still feels stronger for modeling the later task lifecycle and backend capability boundary
+- Go still feels faster for the shortest path to a working daemon MVP
+
+Questions answered by the spikes:
 
 1. Which version reached a clean shape faster?
+   Go, once the toolchain existed locally.
 2. Which version made backend boundaries easier to picture?
+   Rust, because the request and response modeling already pushes toward stricter types.
 3. Which version made task lifecycle state feel safer?
+   Rust, for the same modeling reasons.
 4. Which tradeoff matters more for `muxd` right now: MVP speed or stronger invariants?
+   Still open, but now based on actual spike work rather than assumptions.
 
-## Working Recommendation
+## Working Recommendation After Spikes
 
-Current recommendation before spikes:
+- slight lean toward Go for MVP speed and lower implementation friction
+- slight lean toward Rust for architectural rigor and lifecycle modeling
 
-- slight lean toward Go for MVP speed
-- slight lean toward Rust for architectural rigor
-
-This means the spikes are worth doing. The tradeoff is real enough that picking now would be premature.
+The spikes confirmed the original tradeoff rather than collapsing it. The repository now has enough evidence to update the ADR deliberately instead of guessing.

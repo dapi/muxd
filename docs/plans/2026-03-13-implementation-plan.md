@@ -26,6 +26,7 @@ Reference documents:
 - `docs/architecture/backends/zellij.md`
 - `docs/adr/0001-stack-selection.md`
 - `docs/process/spec-driven-development.md`
+- `docs/specs/2026-03-13-stack-decision-spike.md`
 
 ## Phase 0: Stack Decision
 
@@ -52,6 +53,15 @@ Implement the same minimal program in Go and Rust:
 - return exit status
 
 Keep both spikes disposable.
+
+Implementation location:
+
+- `spikes/stack-decision/`
+
+Validation note:
+
+- both disposable spikes were run on 2026-03-13 against `sh -c 'echo hello'` and `sh -c 'exit 7'`
+- both returned the expected exit status over a Unix socket JSON response
 
 ### Task 0.3: Record stack decision
 
