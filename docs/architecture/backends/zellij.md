@@ -11,6 +11,7 @@ It covers:
 - launch command mapping
 - supported target paths for the first release
 - preflight checks
+- workspace ensure helpers
 - backend limitations the CLI must expose honestly
 
 ## Validated Assumptions
@@ -22,6 +23,11 @@ Confirmed working assumptions for the current product direction:
 - pane and tab naming are available
 - target placement differs by command form
 - target support should be introduced carefully, not all at once
+
+Assumptions that need to be validated in the next slice:
+
+- session creation can be expressed through a stable non-interactive command path
+- tab lookup and tab creation can be modeled without pretending all tab semantics are backend-neutral
 
 ## Useful Commands
 
@@ -59,6 +65,13 @@ The adapter should validate:
 - the requested session is visible in `zellij list-sessions`
 - the requested target is in the supported target set for the current release
 
+For the workspace ensure slice, the adapter should also define:
+
+- how to create a missing session when the caller requested it
+- how to detect whether a named tab already exists
+- how to create a named tab when the caller requested it
+- how to keep those steps explicit in logs and errors
+
 ## Naming
 
 If the user supplies `--name`, pass it through to Zellij.
@@ -85,3 +98,7 @@ If one target behaves differently or is not yet well-supported, the CLI should r
 Blocking semantics should be considered only after the basic launch path is in place.
 
 Different targets may have different blocking support, so this should be added later and documented carefully.
+
+### Workspace creation should not hide backend differences
+
+If Zellij cannot reliably inspect or create a workspace element through a clean non-interactive path, the CLI should expose that limitation instead of faking parity.

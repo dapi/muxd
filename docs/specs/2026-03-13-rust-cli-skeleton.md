@@ -42,7 +42,7 @@ Related documents:
 - actual `zellij` process execution
 - session existence checks
 - target-specific command construction
-- `systemd --user` integration behavior beyond documentation
+- scheduler-specific integration behavior beyond documentation
 
 ## Requirements
 

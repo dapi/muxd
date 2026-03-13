@@ -4,11 +4,11 @@ Date: 2026-03-13
 
 ## Goal
 
-Build the first standalone version of `muxd` as a thin Rust CLI wrapper that launches arbitrary commands into an existing Zellij session.
+Build the first standalone version of `muxd` as a thin Rust CLI wrapper that launches arbitrary commands into a consistent Zellij workspace.
 
 Primary target:
 
-- `systemd --user` timers and other local automation
+- manual shell use and other local automation
 
 Primary backend:
 
@@ -103,13 +103,53 @@ Document and implement stable exit codes for:
 
 Ensure service logs are understandable without reading source code or raw backend usage.
 
-### Task 3.3: `systemd --user` example
+### Task 3.3: Shell usage example
 
-Add a minimal documented integration example showing how a unit or timer should call `muxd launch`.
+Add a minimal documented example showing how a shell command should call `muxd launch`.
 
-## Phase 4: Validation
+## Phase 4: Defaults and ergonomics
 
-### Task 4.1: Manual checks
+### Task 4.1: Config defaults
+
+Add:
+
+- one user-level config file
+- defaults for backend, session, target, and cwd
+- CLI-over-config precedence
+
+### Task 4.2: Validation
+
+Cover:
+
+- config parsing
+- precedence rules
+- invalid config handling
+
+## Phase 5: Workspace ensure semantics
+
+### Task 5.1: Session ensure
+
+Implement explicit session creation when requested.
+
+### Task 5.2: Tab ensure
+
+Implement:
+
+- named tab selection
+- explicit tab creation when requested
+- new pane launch in the selected tab
+
+### Task 5.3: Error handling
+
+Ensure the CLI clearly distinguishes:
+
+- missing workspace element
+- failed workspace creation
+- failed final launch
+
+## Phase 6: Validation
+
+### Task 6.1: Manual checks
 
 Cover:
 
@@ -118,26 +158,30 @@ Cover:
 - missing session
 - unsupported target
 - missing payload command
+- session creation when requested
+- tab creation when requested
 
-### Task 4.2: Automated tests
+### Task 6.2: Automated tests
 
 At minimum:
 
 - argument parsing tests
 - command construction tests
 - exit-code mapping tests
+- workspace ensure tests
 
 ## Current Open Questions
 
 - whether `new_pane` should be the only initial target
-- whether defaults/config should stop at backend, session, target, and cwd or include naming conventions too
+- which CLI flag shape keeps workspace creation explicit without overcomplicating `launch`
+- how much of Zellij tab inspection can be tested without brittle integration coupling
 - whether `--wait` still makes sense after the defaults/config slice is complete
 
 ## Suggested Immediate Next Step
 
-Start the defaults/config slice after stage 1, keeping it focused on reducing `systemd --user` timer boilerplate rather than introducing blocking semantics.
+Start the workspace ensure slice after defaults/config, keeping it focused on explicit session/tab creation semantics rather than lifecycle tracking.
 
 Reference spec:
 
-- `docs/specs/2026-03-13-launch-defaults-config.md`
-- `docs/plans/2026-03-13-defaults-config-delivery-plan.md`
+- `docs/specs/2026-03-13-zellij-workspace-ensure.md`
+- `docs/plans/2026-03-13-workspace-ensure-delivery-plan.md`
