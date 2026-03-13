@@ -60,6 +60,10 @@ Costs:
 
 Decision deferred until minimal spikes are completed.
 
+Comparison input for that decision lives in:
+
+- `docs/stack-evaluation.md`
+
 The repository will build two tiny equivalents in Go and Rust before production code starts:
 
 - open Unix socket

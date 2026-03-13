@@ -12,6 +12,7 @@ Current documents:
 
 - `docs/design.md` - product and architecture design
 - `docs/adr/0001-stack-selection.md` - stack decision record for Go vs Rust
+- `docs/stack-evaluation.md` - comparison document used before accepting the stack ADR
 - `docs/plans/2026-03-13-implementation-plan.md` - phased implementation plan
 
 ## Scope
