@@ -8,6 +8,7 @@ use crate::runtime::SystemRuntime;
 pub struct LaunchSuccess {
     pub backend: &'static str,
     pub session: String,
+    pub tab: Option<String>,
     pub target: &'static str,
     pub name: Option<String>,
 }

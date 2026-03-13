@@ -25,6 +25,15 @@ pub struct LaunchArgs {
     #[arg(long)]
     pub session: Option<String>,
 
+    #[arg(long)]
+    pub tab: Option<String>,
+
+    #[arg(long)]
+    pub ensure_session: bool,
+
+    #[arg(long)]
+    pub ensure_tab: bool,
+
     #[arg(long, value_enum)]
     pub target: Option<TargetArg>,
 
@@ -81,6 +90,9 @@ impl TryFrom<LaunchArgs> for LaunchRequest {
                 None => return Err("backend is required"),
             },
             session: args.session.ok_or("session is required")?,
+            tab: args.tab,
+            ensure_session: args.ensure_session,
+            ensure_tab: args.ensure_tab,
             target: match args.target {
                 Some(TargetArg::NewPane) => Target::NewPane,
                 None => return Err("target is required"),
@@ -112,6 +124,12 @@ pub fn resolve_launch_request(
         .or_else(|| config.defaults.session.clone())
         .ok_or("session is required")?;
 
+    let tab = args.tab.or_else(|| config.defaults.tab.clone());
+
+    if args.ensure_tab && tab.is_none() {
+        return Err("tab is required when --ensure-tab is used");
+    }
+
     let target = match args.target {
         Some(TargetArg::NewPane) => Target::NewPane,
         None => config.defaults.target.ok_or("target is required")?,
@@ -120,6 +138,9 @@ pub fn resolve_launch_request(
     Ok(LaunchRequest {
         backend,
         session,
+        tab,
+        ensure_session: args.ensure_session,
+        ensure_tab: args.ensure_tab,
         target,
         cwd: args.cwd.or_else(|| config.defaults.cwd.clone()),
         name: args.name,

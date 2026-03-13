@@ -36,6 +36,7 @@ Assumptions that need to be validated in the next slice:
 | Action | Command shape |
 | - | - |
 | list sessions | `zellij list-sessions` |
+| list tab names in session | `zellij -s <s> action query-tab-names` |
 
 ### Launch
 
@@ -44,6 +45,15 @@ Assumptions that need to be validated in the next slice:
 | `new_pane` | `zellij -s <s> run --name <n> --cwd <dir> -- <cmd>` | strongest first candidate for MVP |
 | `floating_pane` | `zellij -s <s> run --floating --name <n> --cwd <dir> -- <cmd>` | candidate for later slice |
 | `new_tab` | `zellij -s <s> action new-tab --name <n> --close-on-exit -- <cmd>` | likely later because semantics differ |
+
+### Workspace ensure
+
+| Action | Command shape | Notes |
+| - | - | - |
+| create missing session | `zellij attach --create-background <session>` | detached non-interactive session creation |
+| select existing tab by name | `zellij -s <s> action go-to-tab-name <tab>` | fails if tab does not exist |
+| select or create tab by name | `zellij -s <s> action go-to-tab-name --create <tab>` | explicit caller opt-in |
+| launch into selected tab | `zellij -s <s> action new-pane --name <n> --cwd <dir> -- <cmd>` | used after tab selection |
 
 ## First Release Recommendation
 

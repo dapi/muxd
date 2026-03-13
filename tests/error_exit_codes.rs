@@ -11,5 +11,9 @@ fn error_variants_map_to_stable_exit_codes() {
         MuxdError::ResourceUnavailable("missing session".to_string()).exit_code(),
         3
     );
-    assert_eq!(MuxdError::LaunchFailed("boom".to_string()).exit_code(), 4);
+    assert_eq!(
+        MuxdError::WorkspaceSetupFailed("setup failed".to_string()).exit_code(),
+        4
+    );
+    assert_eq!(MuxdError::LaunchFailed("boom".to_string()).exit_code(), 5);
 }

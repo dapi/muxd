@@ -80,7 +80,7 @@ Workspace ensure behavior must stay explicit:
 
 Current documented config scope:
 
-- defaults for backend, session, target, and cwd
+- defaults for backend, session, tab, target, and cwd
 - one user-level config file
 - no named profiles yet
 
@@ -94,7 +94,8 @@ Expected initial exit codes:
 | `1` | invalid user input |
 | `2` | backend or environment unavailable |
 | `3` | requested session or target is unavailable |
-| `4` | backend launch command failed |
+| `4` | workspace setup failed |
+| `5` | backend launch command failed |
 
 The exact numeric mapping can still be refined during implementation, but it must be documented and stable.
 

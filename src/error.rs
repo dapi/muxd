@@ -8,6 +8,7 @@ pub enum MuxdError {
     InvalidConfig(String),
     BackendUnavailable(String),
     ResourceUnavailable(String),
+    WorkspaceSetupFailed(String),
     LaunchFailed(String),
 }
 
@@ -18,6 +19,7 @@ impl MuxdError {
             Self::InvalidConfig(_) => ProcessExitCode::InvalidInput.as_u8(),
             Self::BackendUnavailable(_) => ProcessExitCode::BackendUnavailable.as_u8(),
             Self::ResourceUnavailable(_) => ProcessExitCode::ResourceUnavailable.as_u8(),
+            Self::WorkspaceSetupFailed(_) => ProcessExitCode::WorkspaceSetupFailed.as_u8(),
             Self::LaunchFailed(_) => ProcessExitCode::LaunchFailed.as_u8(),
         }
     }
@@ -30,6 +32,7 @@ impl Display for MuxdError {
             Self::InvalidConfig(message) => write!(f, "{message}"),
             Self::BackendUnavailable(message)
             | Self::ResourceUnavailable(message)
+            | Self::WorkspaceSetupFailed(message)
             | Self::LaunchFailed(message) => write!(f, "{message}"),
         }
     }
