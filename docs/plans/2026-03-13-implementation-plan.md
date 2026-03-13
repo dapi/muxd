@@ -4,272 +4,135 @@ Date: 2026-03-13
 
 ## Goal
 
-Build the first standalone version of `muxd` as a local daemon plus CLI for dispatching tasks into terminal multiplexer sessions.
+Build the first standalone version of `muxd` as a thin Rust CLI wrapper that launches arbitrary commands into an existing Zellij session.
 
 Primary target:
 
-- Zellij backend
+- `systemd --user` timers and other local automation
 
-Design constraint:
+Primary backend:
 
-- core model must remain suitable for a later tmux backend
+- Zellij
 
-## Before Coding
-
-This plan started with a stack decision so the repository would not inherit a language by inertia. That decision is now closed in favor of Rust.
-
-Reference documents:
+## Inputs
 
 - `docs/product/prd.md`
+- `docs/product/roadmap.md`
 - `docs/design.md`
-- `docs/architecture/cli-and-ipc.md`
+- `docs/architecture/launch-cli.md`
 - `docs/architecture/backends/zellij.md`
+- `docs/specs/2026-03-13-zellij-launch-wrapper.md`
+- `docs/specs/2026-03-13-rust-cli-skeleton.md`
 - `docs/adr/0001-stack-selection.md`
-- `docs/process/spec-driven-development.md`
-- `docs/specs/2026-03-13-stack-decision-spike.md`
+- `docs/plans/2026-03-13-stage-1-delivery-plan.md`
 
-## Phase 0: Stack Decision
+## Preconditions
 
-### Task 0.1: Define evaluation criteria
+- Rust stack decision is accepted
+- the first release stays thin and does not grow a daemon or queue
 
-Write down explicit criteria before comparing Go and Rust:
-
-- local daemon ergonomics
-- Unix socket support
-- subprocess management
-- concurrent task orchestration
-- ease of backend abstraction
-- binary distribution story
-- test ergonomics
-- maintenance cost
-
-### Task 0.2: Build two tiny spikes
-
-Implement the same minimal program in Go and Rust:
-
-- open Unix socket
-- accept one JSON request
-- spawn a subprocess
-- return exit status
-
-Keep both spikes disposable.
-
-Implementation location:
-
-- `spikes/stack-decision/`
-
-Validation note:
-
-- both disposable spikes were run on 2026-03-13 against `sh -c 'echo hello'` and `sh -c 'exit 7'`
-- both returned the expected exit status over a Unix socket JSON response
-
-### Task 0.3: Record stack decision
-
-Create a short decision note with:
-
-- winner
-- tradeoffs accepted
-- why the loser was rejected for this project now
-
-Exit criterion:
-
-- repository commits to one stack for MVP
-
-Status:
-
-- completed on 2026-03-13
-- Rust selected in `docs/adr/0001-stack-selection.md`
-
-## Phase 1: Product Skeleton
+## Phase 1: Rust CLI skeleton
 
 ### Task 1.1: Repository skeleton
 
 Create:
 
-- top-level source tree for chosen stack
-- `docs/`
-- formatter/linter config
+- Cargo workspace or crate layout for the thin wrapper
+- formatter and lint configuration
 - basic test command
 
-### Task 1.2: CLI shape
+### Task 1.2: Command shape
 
-Define CLI commands:
+Define:
 
-- `muxd run`
-- `muxd enqueue`
-- `muxd list`
-- `muxd status`
-- `muxd cancel`
+- `muxd launch`
+- base help text
+- payload command parsing after `--`
 
-Decide early:
+### Task 1.3: Core request model
 
-- output format defaults
-- JSON mode behavior
-- exit code semantics
+Define launch request types for:
 
-### Task 1.3: Core types
-
-Define core types independent from Zellij:
-
-- task
 - backend
+- session
 - target
-- mode
-- status
+- name
+- cwd
+- payload command and args
 
-Do not leak backend-specific identifiers into public CLI output except through an explicit backend details field.
+Keep the model launcher-focused rather than task-focused.
 
-## Phase 2: Local Daemon and IPC
+## Phase 2: Zellij launch path
 
-### Task 2.1: Unix socket protocol
-
-Implement NDJSON request/response protocol with versioning.
-
-Methods:
-
-- `enqueue`
-- `get`
-- `list`
-- `status`
-- `cancel`
-
-### Task 2.2: In-memory queue
-
-Implement:
-
-- FIFO pending queue
-- running task tracking
-- task lookup by id
-- status filtering
-
-### Task 2.3: Daemon lifecycle
-
-Implement:
-
-- socket path creation
-- stale socket detection
-- graceful shutdown
-- clean socket removal
-
-## Phase 3: Zellij Backend MVP
-
-### Task 3.1: Backend interface
-
-Define a backend adapter interface for the core:
-
-- `launch`
-- `poll`
-- `cancel`
-- `preflight`
-
-The interface should support both blocking and polling-backed execution paths.
-
-Guardrail:
-
-- backend capability differences should be explicit in the adapter, not hidden in generic core code
-
-### Task 3.2: Zellij preflight
+### Task 2.1: Preflight validation
 
 Validate:
 
 - `zellij` exists in `PATH`
-- requested session exists or error is clear
-- required CLI flags are supported by installed version
+- requested session exists
+- requested target is supported
+- payload command is present
 
-### Task 3.3: Oneshot launch path
+### Task 2.2: Initial target support
 
-Implement Zellij oneshot launches for:
+Implement one safe target path first:
 
-- `new-tab`
-- `new-pane`
-- `floating-pane`
+- `new_pane`
 
-Use blocking commands where supported.
+### Task 2.3: Launch execution
 
-### Task 3.4: Interactive launch path
+Implement backend command construction and execution for the initial target.
 
-Implement interactive launch plus polling-based completion tracking.
+Ensure:
 
-Explicitly document any semantic differences from oneshot mode.
+- `--cwd` is passed where supported
+- `--name` is passed through cleanly
 
-### Task 3.5: Cancellation semantics
+## Phase 3: Automation fit
 
-Implement honest cancellation behavior:
+### Task 3.1: Exit codes
 
-- pending task: remove from runnable set and mark cancelled
-- running task: best-effort cancellation only
+Document and implement stable exit codes for:
 
-Do not claim process termination if backend cannot guarantee it.
+- invalid input
+- backend unavailable
+- session or target unavailable
+- backend launch failure
 
-## Phase 4: Config and Defaults
+### Task 3.2: Human-facing errors
 
-### Task 4.1: Config format decision
+Ensure service logs are understandable without reading source code or raw backend usage.
 
-Decide config format after stack choice, but keep semantics aligned with design:
+### Task 3.3: `systemd --user` example
 
-- defaults block or equivalent
-- backend default
-- session default
-- target default
-- mode default
-- max concurrent
-- max pending
+Add a minimal documented integration example showing how a unit or timer should call `muxd launch`.
 
-### Task 4.2: Server-side defaults
+## Phase 4: Validation
 
-Ensure CLI does not overwrite daemon defaults implicitly.
-
-Only explicit CLI flags should override config values.
-
-### Task 4.3: Validation
-
-Invalid config should fail fast with clear messages.
-
-## Phase 5: Usability and Tests
-
-### Task 5.1: `enqueue --wait`
-
-Implement client-side wait via task polling by id.
-
-Keep it backend-agnostic.
-
-### Task 5.2: Smoke tests
+### Task 4.1: Manual checks
 
 Cover:
 
-- daemon starts
-- enqueue works
-- list/status work
-- task reaches terminal state
-- socket cleaned on shutdown
+- happy-path launch into an existing session
+- missing Zellij binary
+- missing session
+- unsupported target
+- missing payload command
 
-### Task 5.3: Backend tests
+### Task 4.2: Automated tests
 
 At minimum:
 
-- unit tests for queue and protocol
-- integration tests for daemon IPC
-- manual checklist for Zellij backend
-
-## Phase 6: tmux Readiness Review
-
-Before adding tmux, stop and review the architecture:
-
-- did backend-neutral model hold up?
-- are task status semantics still portable?
-- did any Zellij-specific assumptions leak into core?
-
-Output:
-
-- short design review note
-- list of refactors required before tmux support
+- argument parsing tests
+- command construction tests
+- exit-code mapping tests
 
 ## Current Open Questions
 
-- config format after stack selection
-- whether persistence belongs in MVP or immediately after it
-- whether agent execution should be first-class or just treated as arbitrary commands
+- whether `new_pane` should be the only initial target
+- whether `--wait` belongs in the next slice
+- whether config/defaults should come before additional target support
 
 ## Suggested Immediate Next Step
 
-Start Phase 1 with a Rust repository skeleton and define the first production crate layout around daemon, CLI, core types, and backend adapters.
+Start Phase 1 with a Rust crate for `muxd launch` and keep the initial target set to a single, low-surprise Zellij path.

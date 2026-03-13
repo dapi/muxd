@@ -4,150 +4,84 @@ Date: 2026-03-13
 
 ## Purpose
 
-This document records the Zellij-specific behavior that should stay out of the backend-neutral core.
+This document records the Zellij-specific behavior that should stay out of the thin wrapper core.
 
-It combines:
+It covers:
 
-- confirmed CLI capabilities
-- MVP launch mapping
-- completion and cancellation semantics
-- backend limitations the core must not hide
+- launch command mapping
+- supported target paths for the first release
+- preflight checks
+- backend limitations the CLI must expose honestly
 
 ## Validated Assumptions
 
-Confirmed working assumptions for MVP:
+Confirmed working assumptions for the current product direction:
 
 - session selection works through `zellij -s <session> ...`
-- `zellij run` supports `--block-until-exit`
+- `run` supports `--cwd`
 - pane and tab naming are available
-- `--cwd` is supported
-- `list-panes` and `list-tabs` can be used for polling-based inspection
-- arbitrary pane cancellation remains limited
+- target placement differs by command form
+- target support should be introduced carefully, not all at once
 
 ## Useful Commands
 
-### Launch
-
-| Action | Command shape | Notes |
-| - | - | - |
-| new tab with command | `zellij -s <s> action new-tab --name <n> --close-on-exit -- <cmd>` | returns tab id |
-| new pane with command | `zellij -s <s> run --name <n> --cwd <dir> -- <cmd>` | returns pane id unless blocking |
-| floating pane | `zellij -s <s> run --floating --name <n> -- <cmd>` | returns pane id unless blocking |
-| block until exit | `zellij -s <s> run --block-until-exit -- ...` | useful for oneshot |
-
-### Monitoring
+### Validation
 
 | Action | Command shape |
 | - | - |
-| list panes | `zellij -s <s> action list-panes --json --command --state --tab` |
-| list tabs | `zellij -s <s> action list-tabs --json --panes --state` |
 | list sessions | `zellij list-sessions` |
-| close tab by id | `zellij -s <s> action close-tab-by-id <id>` |
 
-## Task Naming
+### Launch
 
-Each launched task should be named `task-<task-id>`.
+| Target | Command shape | Notes |
+| - | - | - |
+| `new_pane` | `zellij -s <s> run --name <n> --cwd <dir> -- <cmd>` | strongest first candidate for MVP |
+| `floating_pane` | `zellij -s <s> run --floating --name <n> --cwd <dir> -- <cmd>` | candidate for later slice |
+| `new_tab` | `zellij -s <s> action new-tab --name <n> --close-on-exit -- <cmd>` | likely later because semantics differ |
 
-This gives the backend adapter a stable way to:
+## First Release Recommendation
 
-- find a pane or tab later through polling
-- distinguish daemon-launched work from unrelated user panes
-- correlate terminal objects with daemon task state
+Start with:
 
-## Launch Mapping
+- `new_pane`
 
-### Mode to Zellij behavior
+Reason:
 
-| Mode | Target | Blocking path | Close on exit |
-| - | - | - | - |
-| `oneshot` | `new_pane` | yes | yes |
-| `oneshot` | `floating_pane` | yes | yes |
-| `oneshot` | `new_tab` | no | yes |
-| `interactive` | any supported target | no | no |
+- it maps cleanly to `zellij run`
+- it supports `--cwd`
+- it avoids widening the first release around target-specific differences
 
-### Target to command shape
+## Preflight Behavior
 
-| Target | Command shape |
-| - | - |
-| `new_tab` | `zellij -s <session> action new-tab --name "task-<id>" --close-on-exit -- <agent-cmd>` |
-| `new_pane` | `zellij -s <session> run --name "task-<id>" --cwd <cwd> -- <agent-cmd>` |
-| `floating_pane` | `zellij -s <session> run --floating --name "task-<id>" --cwd <cwd> -- <agent-cmd>` |
+The adapter should validate:
 
-## Completion Semantics
+- `zellij` exists in `PATH`
+- the requested session is visible in `zellij list-sessions`
+- the requested target is in the supported target set for the current release
 
-### Oneshot
+## Naming
 
-Preferred path:
+If the user supplies `--name`, pass it through to Zellij.
 
-- use `zellij run --block-until-exit --close-on-exit`
-- read exit status directly from the blocking command
+If no name is supplied, the CLI may either:
 
-Special case:
+- omit the name entirely
+- or generate a simple deterministic name in a later ergonomics slice
 
-- `new_tab` does not support `--block-until-exit`
-- for `new_tab` oneshot, the adapter must poll `list-panes` or `list-tabs`
+The first release should avoid inventing a hidden task identity model.
 
-### Interactive
+## Limitations
 
-Interactive launches should not use the blocking path.
+### Backend-specific syntax remains visible internally
 
-The adapter should:
+The wrapper should hide raw command construction from users, but the implementation must still respect Zellij-specific flag and target differences.
 
-- launch the task in a user-facing pane or tab
-- poll backend state until the pane disappears or exits
-- treat user-driven closure as normal interactive completion unless a stronger failure signal is observed
+### Target parity should not be faked
 
-## Cancellation Semantics
+If one target behaves differently or is not yet well-supported, the CLI should reject it explicitly rather than pretending all targets are equivalent.
 
-Zellij cancellation is best-effort.
+### `--wait` is not part of the first slice
 
-Known limitation:
+Blocking semantics should be considered only after the basic launch path is in place.
 
-- there is no reliable `close-pane-by-id` equivalent for arbitrary panes without focus switching
-
-Implications:
-
-- cancelling a pending task is strong and deterministic
-- cancelling a running `new_tab` task can use `close-tab-by-id` when the adapter has a tab id
-- cancelling a running pane task may only mark the task cancelled and attempt backend termination opportunistically
-
-The core must not overstate these guarantees.
-
-## Backend Limitations
-
-### `new_tab` cannot block directly
-
-`action new-tab` does not provide a blocking completion path comparable to `run --block-until-exit`.
-
-The adapter must fall back to polling.
-
-### Blocking `run` does not return pane id
-
-When `--block-until-exit` is used, the blocking command path should be treated as an exit-status channel, not as a reliable pane-id discovery mechanism.
-
-### Output inspection is limited
-
-`dump-screen` is focused-pane oriented, so arbitrary output capture should not be assumed for MVP.
-
-### Pane closure is limited
-
-The absence of strong pane-by-id termination is the main reason cancellation semantics must remain explicitly best-effort.
-
-## Recommended Adapter Behavior
-
-- preflight: confirm `zellij` exists and requested session is visible
-- launch: prefer blocking execution for oneshot pane targets
-- poll: use named tasks and JSON listing commands
-- cancel: expose best-effort truthfully
-- normalize: store any tab id or pane id in backend-local details only
-
-## Manual Validation Notes
-
-Earlier shell validation established these useful facts:
-
-- `run --block-until-exit` blocks correctly for oneshot execution
-- `--close-on-exit` removes finished panes
-- `list-panes --json --command --state` exposes enough state for polling
-- `new_tab` requires polling-based completion tracking
-
-Those findings justify Zellij as the first backend, but they do not justify leaking Zellij-specific behavior into the core task model.
+Different targets may have different blocking support, so this should be added later and documented carefully.

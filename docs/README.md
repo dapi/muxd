@@ -45,4 +45,7 @@ The repo started documentation-first. `docs/adr/0001-stack-selection.md` is now 
 
 - architecture overview: `docs/design.md`
 - PRD: `docs/product/prd.md`
+- roadmap: `docs/product/roadmap.md`
+- use cases: `docs/product/use-cases/`
+- launch contract: `docs/architecture/launch-cli.md`
 - workflow: `docs/process/spec-driven-development.md`

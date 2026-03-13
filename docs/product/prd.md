@@ -6,124 +6,170 @@ Status: Draft
 
 ## Product Summary
 
-`muxd` is a local daemon plus CLI that dispatches tasks into terminal multiplexer sessions through one scriptable interface.
+`muxd` is a thin CLI wrapper that launches arbitrary commands into an existing terminal multiplexer session through a stable, automation-friendly interface.
 
-The first release targets Zellij. The product model must remain suitable for a later tmux backend.
+The first release targets Zellij and is designed to be called from `systemd --user` timers. Long-term, the product may grow into a richer launcher layer and later support tmux, but the first release is intentionally narrow.
 
 ## Problem
 
-Developers already use terminal multiplexers to keep long-running or parallel work organized, but the workflow is still mostly manual:
+Developers already automate recurring work with `systemd --user` timers, but launching that work into an existing multiplexer session is awkward:
 
-- starting a task in the right session, tab, or pane takes hand-driven terminal work
-- shell scripts cannot treat multiplexer execution as a clean queued interface
-- observing pending versus running work across terminals is awkward
-- backend choice leaks into the user workflow too early
+- raw `zellij` commands are verbose and backend-specific
+- timer units should call a stable command with predictable exit codes
+- validation and error messages from direct backend commands are not product-shaped
+- naming, working directory, and placement conventions must otherwise be repeated in every timer and script
 
-There is no small local tool that makes multiplexer execution queueable, observable, and stable enough for scripting.
+For the first release, the problem is not queueing or lifecycle orchestration. The problem is creating one reliable launch interface for recurring automation into an existing Zellij session.
 
 ## Target Users
 
-- developers who run repeated agent or shell tasks inside Zellij or tmux
-- maintainers who want a backend-neutral task model instead of backend-specific scripts
-- advanced shell users who need blocking and inspectable task execution in automation
+- developers who run recurring shell or agent commands from `systemd --user` timers
+- users who want a stable wrapper around `zellij` for scripts and automation
+- maintainers who want to keep room for a later tmux backend without exposing backend CLI syntax directly
+
+Representative scenario:
+
+- `docs/product/use-cases/0001-hourly-github-issue-analysis.md`
 
 ## Product Goal
 
-Make execution inside a terminal multiplexer scriptable, observable, and queueable through one stable interface.
+Make launching recurring commands into an existing multiplexer session simple, stable, and script-friendly.
+
+## Primary User Scenario
+
+A developer has a `systemd --user` timer that should periodically run a command inside an already running Zellij session.
+
+The timer should call one stable CLI, such as:
+
+```text
+muxd launch --session work --target new_pane --cwd /repo --name nightly-report -- make report
+```
+
+`muxd` is responsible for:
+
+- validating arguments
+- checking backend availability
+- checking that the session exists
+- constructing the correct backend command
+- returning clear exit codes and user-facing errors
+
+`systemd --user` remains responsible for scheduling.
 
 ## Jobs To Be Done
 
-- enqueue several tasks against one existing multiplexer session
-- block in a shell script until a oneshot task reaches a terminal state
-- inspect pending and running work from another terminal
-- preserve the same user-facing task model when a second backend is added later
+- launch a recurring command into an existing Zellij session from `systemd --user`
+- keep timer unit files short and stable
+- avoid duplicating backend-specific command syntax across scripts
+- fail clearly when Zellij, the session, or the requested target is unavailable
+- keep room for a later tmux backend without redesigning the user-facing CLI
 
 ## MVP Scope
 
 The MVP must provide:
 
-- a local daemon process
-- a CLI client
+- one CLI command: `muxd launch`
+- Zellij as the only backend
+- existing-session launch only
+- support for arbitrary commands after `--`
+- support for a small target set, starting with the safest path first
+- support for `--cwd`
+- support for `--name`
+- stable exit codes for automation
+- error messages suitable for `systemd --user` logs
+- a documented integration pattern for `systemd --user` timers
+
+## Explicit MVP Exclusions
+
+The MVP does not include:
+
+- daemon process
 - Unix socket IPC
-- in-memory task queueing
-- task lifecycle tracking
-- Zellij backend support
-- backend-neutral task statuses
-- `enqueue`, `get`, `list`, `status`, and `cancel` flows
-- client-side `enqueue --wait`
-
-## Non-Goals
-
+- task ids
+- queueing
+- in-memory store
+- `enqueue`, `get`, `list`, `status`, or `cancel`
+- backend-neutral lifecycle tracking across multiple tasks
+- persistence or history
 - network API
-- distributed scheduling
-- webhooks
-- durable persistence beyond what correct local daemon behavior requires
-- abstracting away every backend-specific limitation
-- supporting both Zellij and tmux in the first release
+- tmux support in the first release
 
 ## User Experience Principles
 
-- local-first and script-friendly
-- honest status and cancellation semantics
-- backend-neutral core model
-- explicit failure over fake portability
-- human output for terminals, JSON output for automation
+- small stable CLI surface
+- direct automation fit
+- explicit validation and failure modes
+- thin wrapper over backend launch, not a hidden orchestration layer
+- avoid pretending to support semantics the backend cannot guarantee
 
 ## Functional Requirements
 
-### FR-1: Enqueue work
+### FR-1: Launch command
 
-The user can create tasks for an existing multiplexer session and choose backend, target, mode, name, agent, and working directory.
+The user can launch an arbitrary command into an existing Zellij session through `muxd launch`.
 
-### FR-2: Observe lifecycle
+### FR-2: Validate before launch
 
-The user can inspect a task by id, list active or historical tasks, and see backend-neutral states.
+The CLI fails clearly if:
 
-### FR-3: Wait in scripts
+- `zellij` is not installed or not available in `PATH`
+- the requested session does not exist
+- the requested target is unsupported
+- required arguments are missing
 
-The user can block until a task reaches a terminal state and receive a meaningful exit code.
+### FR-3: Support automation-friendly options
 
-### FR-4: Cancel honestly
+The CLI supports at least:
 
-The user can cancel pending tasks strongly and running tasks on a best-effort basis, without the product overstating backend guarantees.
+- `--session`
+- `--target`
+- `--cwd`
+- `--name`
 
-### FR-5: Preserve backend boundary
+The payload command is passed after `--`.
 
-The core queue, IPC, and lifecycle model must not depend on Zellij-specific command syntax or handle formats.
+### FR-4: Return stable exit behavior
+
+The CLI returns documented exit codes that let `systemd --user` and shell scripts distinguish launch success from validation or environment failures.
+
+### FR-5: Keep backend syntax behind the wrapper
+
+The user-facing CLI must not require callers to know raw Zellij command forms.
 
 ## Success Signals
 
 The MVP is successful when:
 
-- one daemon can manage multiple queued tasks in one Zellij session
-- automation can use `enqueue --wait` without backend-specific glue
-- users can inspect pending and running work from another shell
-- adding tmux later looks like a second adapter, not a core rewrite
+- a `systemd --user` timer can call `muxd launch` without embedding raw Zellij syntax
+- failures in user timers are understandable from logs alone
+- users can standardize launch conventions such as names, targets, and working directory through one CLI
+- later support for tmux still looks like a backend addition, not a product rewrite
 
 ## Constraints
 
 - the implementation must follow the accepted Rust stack decision
-- the implementation stack is Rust
-- cancellation guarantees are limited by backend capabilities
-- configuration semantics should stay stack-neutral until implementation starts
+- the first release must stay thin and avoid premature daemon or queue design
+- scheduling belongs to `systemd --user`, not to `muxd`
+- backend guarantees must not be overstated
 
 ## Risks
 
-- backend-neutral design may drift into lowest-common-denominator abstractions
-- lifecycle semantics may become inconsistent across modes or targets
-- Zellij assumptions may leak into the public task model
-- stack selection may bias the architecture before requirements are fully locked
+- the wrapper may be too thin to justify its own binary if it adds no real stability or ergonomics over direct `zellij`
+- backend-specific assumptions may still leak into the public CLI
+- target support may expand too quickly and recreate hidden complexity
+- later dispatcher ambitions could distort the first release scope
 
 ## Open Questions
 
-- config format after stack selection
-- whether persistence belongs in MVP or immediately after it
-- whether `agent` should be a first-class concept or just command construction input
+- which single target should be the first supported path: `new_pane` or `floating_pane`
+- whether `--wait` belongs in the first release or in the next slice
+- whether defaults/config should land before or after the first usable launch flow
 
 ## Related Documents
 
+- `docs/product/roadmap.md`
+- `docs/product/use-cases/`
 - `docs/design.md`
-- `docs/architecture/cli-and-ipc.md`
+- `docs/architecture/launch-cli.md`
 - `docs/architecture/backends/zellij.md`
+- `docs/specs/2026-03-13-zellij-launch-wrapper.md`
 - `docs/adr/0001-stack-selection.md`
-- `docs/plans/2026-03-13-implementation-plan.md`
